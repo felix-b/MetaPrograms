@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,6 +7,11 @@ namespace MetaPrograms
 {
     public class FilePath
     {
+        private static readonly char[] DirectorySeparatorChars = new[] {
+            '/',
+            '\\'
+        };
+        
         private readonly string[] _subFolder;
         private readonly string _fileName;
 
@@ -55,6 +61,26 @@ namespace MetaPrograms
                 .ToArray());
         }
 
+        public FilePath RelativeTo(FilePath other)
+        {
+            var thisParts = _subFolder.Append(_fileName).ToArray();    
+            var otherParts = other._subFolder.Append(other._fileName).ToArray();
+            int commonPrefixPartCount;
+            
+            for (
+                commonPrefixPartCount = 0; 
+                commonPrefixPartCount < thisParts.Length && 
+                commonPrefixPartCount < otherParts.Length &&
+                thisParts[commonPrefixPartCount] == otherParts[commonPrefixPartCount]; 
+                commonPrefixPartCount++)
+            {
+            }
+
+            return (commonPrefixPartCount > 0 
+                ? new FilePath(thisParts.Skip(commonPrefixPartCount).ToArray())
+                : this);
+        }
+
         public override string ToString()
         {
             return FullPath;
@@ -70,6 +96,30 @@ namespace MetaPrograms
         public static string Normalize(string path)
         {
             return path?.Replace(Path.DirectorySeparatorChar, '/');
+        }
+
+        public static FilePath Parse(string path)
+        {
+            int initialSlashCount;
+
+            for (
+                initialSlashCount = 0; 
+                initialSlashCount < path.Length && path[initialSlashCount] == '/'; 
+                initialSlashCount++)
+            {
+            }
+
+            var parts = path
+                .Substring(initialSlashCount)
+                .Split(DirectorySeparatorChars, StringSplitOptions.RemoveEmptyEntries);
+
+            if (parts.Length > 0)
+            {
+                parts[0] = path.Substring(0, initialSlashCount + parts[0].Length);
+                return new FilePath(parts);
+            }
+
+            throw new ArgumentException("Specified string is an empty path", nameof(path));
         }
     }
 }
