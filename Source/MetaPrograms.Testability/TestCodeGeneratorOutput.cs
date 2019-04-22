@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
@@ -53,15 +54,16 @@ namespace MetaPrograms.Testability
             }
         }
         
-        private void ShouldMatchFolder(string expectedOutputsFolder)
+        public void ShouldMatchFolder(string expectedOutputsFolder, Func<string, bool> filter = null)
         {
             var expectedFilePaths =
                 Directory.GetFiles(expectedOutputsFolder, "*.*", SearchOption.AllDirectories)
-                    .Select(path => path.TrimSuffix(expectedOutputsFolder))
+                    .Select(path => path.TrimPrefix(expectedOutputsFolder))
                     .Select(path => path.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+                    .Where(path => filter == null || filter(path))
                     .ToArray();
 
-            var actualFilePaths =_sourceFiles.Select(f => f.Path.FullPath);
+            var actualFilePaths = _sourceFiles.Select(f => f.Path.FullPath);
             actualFilePaths.ShouldBe(expectedFilePaths, ignoreOrder: true);
             
             foreach (var entry in _sourceFiles)
